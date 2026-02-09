@@ -3,88 +3,1606 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة الثعبان - الرئيسية</title>
-    <link rel="stylesheet" href="style.css">
+    <title>لعبة الثعبان - Snake Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script type="module">
+        // Firebase configuration
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            signOut,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getDatabase, 
+            ref, 
+            set, 
+            get, 
+            update 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyADUllRLqhTv27i_lF5p_0sKGxdJct5pi8",
+            authDomain: "roman-d89d8.firebaseapp.com",
+            databaseURL: "https://roman-d89d8-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "roman-d89d8",
+            storageBucket: "roman-d89d8.firebasestorage.app",
+            messagingSenderId: "950974837260",
+            appId: "1:950974837260:web:e9bae750be3989a1d13429",
+            measurementId: "G-PYN5SMPSR3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        
+        // جعل المتغيرات عامة
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDatabase = database;
+        window.firebaseMethods = {
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            signOut,
+            updateProfile,
+            ref,
+            set,
+            get,
+            update
+        };
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --accent-color: #FF9800;
+            --dark-color: #333;
+            --light-color: #f5f5f5;
+            --danger-color: #f44336;
+            --success-color: #4CAF50;
+            --border-radius: 10px;
+            --box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--dark-color);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* صفحة الرئيسية */
+        .page {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* الترويسة */
+        header {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* الأزرار */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #1976d2;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+            transform: translateY(-3px);
+        }
+
+        .btn-block {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        /* نماذج الإدخال */
+        .auth-form {
+            background: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--secondary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .show-password {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        /* معرض الصور */
+        .avatar-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .avatar-item {
+            width: 100%;
+            height: 100px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: var(--transition);
+        }
+
+        .avatar-item:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-item.selected {
+            border-color: var(--primary-color);
+        }
+
+        .avatar-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--secondary-color);
+            color: white;
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            margin: 10px 0;
+        }
+
+        .upload-btn:hover {
+            background: #1976d2;
+        }
+
+        .avatar-preview {
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+            border: 3px dashed #ddd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* صفحة اللعبة */
+        #gamePage {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+        }
+
+        #gameCanvas {
+            background: #2c3e50;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .game-info {
+            flex: 1;
+            background: var(--light-color);
+            padding: 25px;
+            border-radius: var(--border-radius);
+        }
+
+        .score-board {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+        }
+
+        .score-board h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        #currentScore {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .controls {
+            margin-top: 30px;
+        }
+
+        .controls h4 {
+            margin-bottom: 15px;
+            color: var(--dark-color);
+        }
+
+        .controls ul {
+            list-style: none;
+            padding-right: 20px;
+        }
+
+        .controls li {
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .key {
+            background: var(--dark-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* صفحة الملف الشخصي */
+        .profile-container {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 40px;
+            box-shadow: var(--box-shadow);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .profile-pic {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 5px solid var(--primary-color);
+        }
+
+        .profile-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-info h2 {
+            color: var(--dark-color);
+            margin-bottom: 10px;
+        }
+
+        .profile-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .detail-card {
+            background: var(--light-color);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--box-shadow);
+        }
+
+        .detail-card h4 {
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detail-card p {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        /* الرسائل */
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* تذييل الصفحة */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* تصميم متجاوب */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            header, .profile-container, #gamePage {
+                padding: 20px;
+            }
+
+            .game-container {
+                flex-direction: column;
+            }
+
+            #gameCanvas {
+                width: 100% !important;
+                height: auto !important;
+            }
+
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .avatar-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .avatar-options {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1><i class="fas fa-gamepad"></i> لعبة الثعبان</h1>
-            <p>استمتع بلعبة الثعبان الكلاسيكية مع نظام متكامل</p>
-        </header>
-        
-        <main class="main-content">
-            <div class="hero">
-                <div class="game-preview">
-                    <div class="snake-board-preview">
-                        <!-- Snake preview animation -->
-                        <div class="snake-preview"></div>
-                        <div class="food-preview"></div>
+        <!-- صفحة الرئيسية -->
+        <div id="homePage" class="page active">
+            <header>
+                <h1><i class="fas fa-gamepad"></i> لعبة الثعبان</h1>
+                <p>استمتع بلعبة الثعبان الكلاسيكية مع نظام متكامل</p>
+            </header>
+            
+            <main class="main-content">
+                <div class="hero">
+                    <div class="game-preview">
+                        <div class="snake-board-preview">
+                            <div class="snake-preview"></div>
+                            <div class="food-preview"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="welcome-message">
+                        <h2>مرحباً بك في لعبة الثعبان</h2>
+                        <p>لعبة كلاسيكية ممتعة تحتاج إلى الذكاء والسرعة. سجل الدخول للبدء!</p>
+                        
+                        <div class="features">
+                            <div class="feature">
+                                <i class="fas fa-user-plus"></i>
+                                <h3>إنشاء حساب</h3>
+                                <p>سجل ببياناتك الشخصية واختر صورتك</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-user-shield"></i>
+                                <h3>تسجيل آمن</h3>
+                                <p>نظام مصادقة آمن باستخدام Firebase</p>
+                            </div>
+                            <div class="feature">
+                                <i class="fas fa-trophy"></i>
+                                <h3>تحدي نفسك</h3>
+                                <p>حقق أعلى الدرجات وتفوق على أصدقائك</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="welcome-message">
-                    <h2>مرحباً بك في لعبة الثعبان</h2>
-                    <p>لعبة كلاسيكية ممتعة تحتاج إلى الذكاء والسرعة. سجل الدخول للبدء!</p>
+                <div class="auth-buttons">
+                    <button onclick="showPage('loginPage')" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                    </button>
+                    <button onclick="showPage('registerPage')" class="btn btn-secondary">
+                        <i class="fas fa-user-plus"></i> إنشاء حساب جديد
+                    </button>
+                </div>
+            </main>
+        </div>
+
+        <!-- صفحة تسجيل الدخول -->
+        <div id="loginPage" class="page">
+            <header>
+                <h1><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</h1>
+                <button onclick="showPage('homePage')" class="back-home btn btn-secondary">
+                    <i class="fas fa-home"></i> العودة للرئيسية
+                </button>
+            </header>
+            
+            <div class="auth-form">
+                <div class="auth-header">
+                    <h2>مرحباً بعودتك!</h2>
+                    <p>سجل دخولك للبدء في اللعب</p>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">
+                            <i class="fas fa-envelope"></i> البريد الإلكتروني
+                        </label>
+                        <input type="email" id="loginEmail" required 
+                               placeholder="أدخل بريدك الإلكتروني">
+                    </div>
                     
-                    <div class="features">
-                        <div class="feature">
-                            <i class="fas fa-user-plus"></i>
-                            <h3>إنشاء حساب</h3>
-                            <p>سجل ببياناتك الشخصية واختر صورتك</p>
+                    <div class="form-group">
+                        <label for="loginPassword">
+                            <i class="fas fa-lock"></i> كلمة المرور
+                        </label>
+                        <div class="password-container">
+                            <input type="password" id="loginPassword" required 
+                                   placeholder="أدخل كلمة المرور">
+                            <button type="button" class="show-password" onclick="togglePassword('loginPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
-                        <div class="feature">
-                            <i class="fas fa-user-shield"></i>
-                            <h3>تسجيل آمن</h3>
-                            <p>نظام مصادقة آمن باستخدام Firebase</p>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                    </button>
+                    
+                    <div class="auth-footer">
+                        <p style="text-align: center; margin-top: 20px;">
+                            ليس لديك حساب؟ 
+                            <a href="#" onclick="showPage('registerPage')">أنشئ حساب جديد</a>
+                        </p>
+                    </div>
+                </form>
+                
+                <div id="loginMessage" class="message"></div>
+            </div>
+        </div>
+
+        <!-- صفحة إنشاء حساب -->
+        <div id="registerPage" class="page">
+            <header>
+                <h1><i class="fas fa-user-plus"></i> إنشاء حساب جديد</h1>
+                <button onclick="showPage('homePage')" class="back-home btn btn-secondary">
+                    <i class="fas fa-home"></i> العودة للرئيسية
+                </button>
+            </header>
+            
+            <div class="auth-form">
+                <div class="auth-header">
+                    <h2>انضم إلينا الآن!</h2>
+                    <p>املأ البيانات التالية لإنشاء حسابك</p>
+                </div>
+                
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="name">
+                            <i class="fas fa-user"></i> الاسم الكامل
+                        </label>
+                        <input type="text" id="name" required 
+                               placeholder="أدخل اسمك الكامل">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="birthDate">
+                            <i class="fas fa-birthday-cake"></i> تاريخ الميلاد
+                        </label>
+                        <input type="date" id="birthDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gender">
+                            <i class="fas fa-venus-mars"></i> الجنس
+                        </label>
+                        <select id="gender" required>
+                            <option value="">اختر الجنس</option>
+                            <option value="ذكر">ذكر</option>
+                            <option value="أنثى">أنثى</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">
+                            <i class="fab fa-whatsapp"></i> رقم الواتساب
+                        </label>
+                        <input type="tel" id="phone" required 
+                               placeholder="مثال: 0591234567" 
+                               pattern="[0-9]{10}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="fas fa-envelope"></i> البريد الإلكتروني
+                        </label>
+                        <input type="email" id="email" required 
+                               placeholder="أدخل بريدك الإلكتروني">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> كلمة المرور
+                        </label>
+                        <div class="password-container">
+                            <input type="password" id="password" required 
+                                   placeholder="أنشئ كلمة مرور قوية"
+                                   minlength="6">
+                            <button type="button" class="show-password" onclick="togglePassword('password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
-                        <div class="feature">
-                            <i class="fas fa-trophy"></i>
-                            <h3>تحدي نفسك</h3>
-                            <p>حقق أعلى الدرجات وتفوق على أصدقائك</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <i class="fas fa-image"></i> صورة الملف الشخصي
+                        </label>
+                        
+                        <div class="avatar-options" id="avatarOptions"></div>
+                        
+                        <label class="upload-btn">
+                            <i class="fas fa-upload"></i>
+                            رفع صورة خاصة
+                            <input type="file" id="customAvatar" accept="image/*" style="display: none;">
+                        </label>
+                        
+                        <div class="avatar-preview" id="avatarPreview">
+                            <img id="previewImage" src="" alt="Preview" style="display: none;">
+                            <p id="previewText">سيظهر معاينة الصورة هنا</p>
                         </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-user-plus"></i> إنشاء الحساب
+                    </button>
+                    
+                    <div class="auth-footer">
+                        <p style="text-align: center; margin-top: 20px;">
+                            لديك حساب بالفعل؟ 
+                            <a href="#" onclick="showPage('loginPage')">سجل الدخول</a>
+                        </p>
+                    </div>
+                </form>
+                
+                <div id="registerMessage" class="message"></div>
+            </div>
+        </div>
+
+        <!-- صفحة الملف الشخصي -->
+        <div id="profilePage" class="page">
+            <header>
+                <h1><i class="fas fa-user-circle"></i> الملف الشخصي</h1>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="showPage('gamePage')" class="btn btn-primary">
+                        <i class="fas fa-gamepad"></i> ابدأ اللعب
+                    </button>
+                    <button onclick="logout()" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                    </button>
+                </div>
+            </header>
+            
+            <div class="profile-container">
+                <div class="profile-header">
+                    <div class="profile-pic">
+                        <img id="profileImage" src="" alt="صورة الملف الشخصي">
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profileName"></h2>
+                        <p id="profileEmail"></p>
+                        <p id="profileSince" style="color: #666; margin-top: 10px;"></p>
+                    </div>
+                </div>
+                
+                <div class="profile-details">
+                    <div class="detail-card">
+                        <h4><i class="fas fa-birthday-cake"></i> تاريخ الميلاد</h4>
+                        <p id="profileBirthDate"></p>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <h4><i class="fas fa-venus-mars"></i> الجنس</h4>
+                        <p id="profileGender"></p>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <h4><i class="fab fa-whatsapp"></i> رقم الواتساب</h4>
+                        <p id="profilePhone"></p>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <h4><i class="fas fa-calendar-alt"></i> تاريخ التسجيل</h4>
+                        <p id="profileRegisterDate"></p>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <h4><i class="fas fa-trophy"></i> أعلى نتيجة</h4>
+                        <p id="profileHighScore">0 نقطة</p>
+                    </div>
+                    
+                    <div class="detail-card">
+                        <h4><i class="fas fa-gamepad"></i> عدد مرات اللعب</h4>
+                        <p id="profileGamesPlayed">0 مرة</p>
                     </div>
                 </div>
             </div>
-            
-            <div class="auth-buttons">
-                <a href="login.html" class="btn btn-primary">
-                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
-                </a>
-                <a href="register.html" class="btn btn-secondary">
-                    <i class="fas fa-user-plus"></i> إنشاء حساب جديد
-                </a>
+        </div>
+
+        <!-- صفحة اللعبة -->
+        <div id="gamePage" class="page">
+            <div class="game-header">
+                <div>
+                    <h2><i class="fas fa-gamepad"></i> لعبة الثعبان</h2>
+                    <p id="playerName">مرحباً، لاعب!</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="showPage('profilePage')" class="btn btn-secondary">
+                        <i class="fas fa-user"></i> الملف الشخصي
+                    </button>
+                    <button onclick="pauseGame()" id="pauseBtn" class="btn btn-primary">
+                        <i class="fas fa-pause"></i> إيقاف
+                    </button>
+                    <button onclick="logout()" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt"></i> خروج
+                    </button>
+                </div>
             </div>
             
-            <div class="instructions">
-                <h3><i class="fas fa-info-circle"></i> كيفية اللعب:</h3>
-                <ul>
-                    <li>استخدم مفاتيح الأسهم للتحكم في اتجاه الثعبان</li>
-                    <li>كلما أكلت الطعام زاد طول الثعبان</li>
-                    <li>تجنب الاصطدام بالجدران أو بجسم الثعبان نفسه</li>
-                    <li>حاول تحقيق أكبر عدد ممكن من النقاط</li>
-                </ul>
+            <div class="game-container">
+                <div>
+                    <canvas id="gameCanvas" width="600" height="600"></canvas>
+                </div>
+                
+                <div class="game-info">
+                    <div class="score-board">
+                        <h3>النتيجة الحالية</h3>
+                        <div id="currentScore">0</div>
+                        <p>أعلى نتيجة: <span id="highScore">0</span></p>
+                    </div>
+                    
+                    <div class="controls">
+                        <h4><i class="fas fa-keyboard"></i> عناصر التحكم</h4>
+                        <ul>
+                            <li><span class="key">↑</span> للأعلى</li>
+                            <li><span class="key">↓</span> للأسفل</li>
+                            <li><span class="key">←</span> لليسار</li>
+                            <li><span class="key">→</span> لليمين</li>
+                            <li><span class="key">Space</span> إيقاف/استئناف</li>
+                            <li><span class="key">R</span> إعادة التشغيل</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-top: 30px;">
+                        <h4><i class="fas fa-info-circle"></i> تعليمات اللعب</h4>
+                        <p>تجنب الاصطدام بالجدران أو بجسم الثعبان. كلما أكلت طعاماً زاد طولك!</p>
+                    </div>
+                </div>
             </div>
-        </main>
-        
+        </div>
+
         <footer>
             <p>© 2024 لعبة الثعبان. تم التطوير باستخدام Firebase</p>
         </footer>
     </div>
-    
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="auth.js"></script>
+
     <script>
-        // تحقق إذا كان المستخدم مسجل دخول بالفعل
-        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { auth } from './firebase-config.js';
+        // المتغيرات العامة
+        let currentUser = null;
+        let selectedAvatar = '';
+        let gameRunning = false;
+        let gamePaused = false;
+        let score = 0;
+        let highScore = 0;
         
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.location.href = "profile.html";
+        // صور افتراضية
+        const defaultAvatars = [
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=عمر',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=سارة',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=أحمد',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=فاطمة',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=محمد',
+            'https://api.dicebear.com/7.x/avataaars/svg?seed=نور'
+        ];
+
+        // تهيئة التطبيق عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحميل الصور الافتراضية
+            loadDefaultAvatars();
+            
+            // إعداد المستمعين للنماذج
+            setupEventListeners();
+            
+            // التحقق من حالة المستخدم
+            checkAuthState();
+            
+            // تهيئة اللعبة
+            initGame();
+        });
+
+        // تحميل الصور الافتراضية
+        function loadDefaultAvatars() {
+            const avatarOptions = document.getElementById('avatarOptions');
+            avatarOptions.innerHTML = '';
+            
+            defaultAvatars.forEach((avatar, index) => {
+                const avatarItem = document.createElement('div');
+                avatarItem.className = 'avatar-item';
+                avatarItem.innerHTML = `<img src="${avatar}" alt="Avatar ${index + 1}">`;
+                avatarItem.onclick = () => selectAvatar(avatar);
+                avatarOptions.appendChild(avatarItem);
+            });
+            
+            // إعداد رفع الصورة
+            document.getElementById('customAvatar').addEventListener('change', handleImageUpload);
+        }
+
+        // اختيار صورة من المعرض
+        function selectAvatar(avatarUrl) {
+            selectedAvatar = avatarUrl;
+            const previewImage = document.getElementById('previewImage');
+            const previewText = document.getElementById('previewText');
+            
+            previewImage.src = avatarUrl;
+            previewImage.style.display = 'block';
+            previewText.style.display = 'none';
+            
+            // إزالة التحديد السابق وإضافة التحديد الجديد
+            document.querySelectorAll('.avatar-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        // رفع صورة خاصة
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    showMessage('registerMessage', 'حجم الصورة كبير جداً. الحد الأقصى 2 ميجابايت', 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedAvatar = e.target.result;
+                    const previewImage = document.getElementById('previewImage');
+                    const previewText = document.getElementById('previewText');
+                    
+                    previewImage.src = selectedAvatar;
+                    previewImage.style.display = 'block';
+                    previewText.style.display = 'none';
+                    
+                    // إزالة التحديد من الصور الافتراضية
+                    document.querySelectorAll('.avatar-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // تبديل إظهار/إخفاء كلمة المرور
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = input.nextElementSibling.querySelector('i');
+            
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // التحقق من حالة المستخدم
+        function checkAuthState() {
+            window.firebaseMethods.onAuthStateChanged(window.firebaseAuth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    loadUserProfile(user.uid);
+                    showPage('profilePage');
+                } else {
+                    currentUser = null;
+                    showPage('homePage');
+                }
+            });
+        }
+
+        // تسجيل الدخول
+        async function loginUser(email, password) {
+            try {
+                const userCredential = await window.firebaseMethods.signInWithEmailAndPassword(
+                    window.firebaseAuth, email, password
+                );
+                return { success: true, user: userCredential.user };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // إنشاء حساب جديد
+        async function registerUser(userData) {
+            try {
+                // إنشاء المستخدم في المصادقة
+                const userCredential = await window.firebaseMethods.createUserWithEmailAndPassword(
+                    window.firebaseAuth, userData.email, userData.password
+                );
+                
+                // تحديث الاسم في الملف الشخصي
+                await window.firebaseMethods.updateProfile(userCredential.user, {
+                    displayName: userData.name
+                });
+                
+                // حفظ بيانات المستخدم في قاعدة البيانات
+                const userRef = window.firebaseMethods.ref(window.firebaseDatabase, 'users/' + userCredential.user.uid);
+                await window.firebaseMethods.set(userRef, {
+                    name: userData.name,
+                    birthDate: userData.birthDate,
+                    gender: userData.gender,
+                    phone: userData.phone,
+                    email: userData.email,
+                    avatar: userData.avatar,
+                    registerDate: new Date().toISOString(),
+                    highScore: 0,
+                    gamesPlayed: 0
+                });
+                
+                return { success: true, user: userCredential.user };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        // تحميل بيانات الملف الشخصي
+        async function loadUserProfile(userId) {
+            try {
+                const userRef = window.firebaseMethods.ref(window.firebaseDatabase, 'users/' + userId);
+                const snapshot = await window.firebaseMethods.get(userRef);
+                
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    
+                    // تحديث واجهة المستخدم
+                    document.getElementById('profileName').textContent = userData.name;
+                    document.getElementById('profileEmail').textContent = userData.email;
+                    document.getElementById('profileBirthDate').textContent = new Date(userData.birthDate).toLocaleDateString('ar-SA');
+                    document.getElementById('profileGender').textContent = userData.gender;
+                    document.getElementById('profilePhone').textContent = userData.phone;
+                    document.getElementById('profileHighScore').textContent = userData.highScore + ' نقطة';
+                    document.getElementById('profileGamesPlayed').textContent = userData.gamesPlayed + ' مرة';
+                    
+                    const registerDate = new Date(userData.registerDate);
+                    document.getElementById('profileSince').textContent = `مسجل منذ: ${registerDate.toLocaleDateString('ar-SA')}`;
+                    document.getElementById('profileRegisterDate').textContent = registerDate.toLocaleDateString('ar-SA');
+                    
+                    if (userData.avatar) {
+                        document.getElementById('profileImage').src = userData.avatar;
+                    }
+                    
+                    // تحديث صفحة اللعبة
+                    document.getElementById('playerName').textContent = `مرحباً، ${userData.name}`;
+                    document.getElementById('highScore').textContent = userData.highScore;
+                    highScore = userData.highScore;
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        // تحديث النتيجة العالية
+        async function updateHighScore(newScore) {
+            if (!currentUser || newScore <= highScore) return;
+            
+            try {
+                const userRef = window.firebaseMethods.ref(window.firebaseDatabase, 'users/' + currentUser.uid);
+                await window.firebaseMethods.update(userRef, {
+                    highScore: newScore
+                });
+                highScore = newScore;
+                document.getElementById('highScore').textContent = newScore;
+                document.getElementById('profileHighScore').textContent = newScore + ' نقطة';
+            } catch (error) {
+                console.error('Error updating score:', error);
+            }
+        }
+
+        // زيادة عدد مرات اللعب
+        async function incrementGamesPlayed() {
+            if (!currentUser) return;
+            
+            try {
+                const userRef = window.firebaseMethods.ref(window.firebaseDatabase, 'users/' + currentUser.uid);
+                const snapshot = await window.firebaseMethods.get(userRef);
+                
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    const gamesPlayed = (userData.gamesPlayed || 0) + 1;
+                    
+                    await window.firebaseMethods.update(userRef, {
+                        gamesPlayed: gamesPlayed
+                    });
+                    
+                    document.getElementById('profileGamesPlayed').textContent = gamesPlayed + ' مرة';
+                }
+            } catch (error) {
+                console.error('Error updating games played:', error);
+            }
+        }
+
+        // تسجيل الخروج
+        async function logout() {
+            try {
+                await window.firebaseMethods.signOut(window.firebaseAuth);
+                currentUser = null;
+                showPage('homePage');
+            } catch (error) {
+                console.error('Error logging out:', error);
+            }
+        }
+
+        // إعداد مستمعي الأحداث
+        function setupEventListeners() {
+            // نموذج تسجيل الدخول
+            document.getElementById('loginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                const result = await loginUser(email, password);
+                
+                if (result.success) {
+                    showMessage('loginMessage', 'تم تسجيل الدخول بنجاح!', 'success');
+                    setTimeout(() => {
+                        loadUserProfile(result.user.uid);
+                        showPage('profilePage');
+                    }, 1000);
+                } else {
+                    showMessage('loginMessage', result.error, 'error');
+                }
+            });
+            
+            // نموذج إنشاء حساب
+            document.getElementById('registerForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!selectedAvatar) {
+                    showMessage('registerMessage', 'الرجاء اختيار صورة للملف الشخصي', 'error');
+                    return;
+                }
+                
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    showMessage('registerMessage', 'كلمات المرور غير متطابقة', 'error');
+                    return;
+                }
+                
+                const userData = {
+                    name: document.getElementById('name').value,
+                    birthDate: document.getElementById('birthDate').value,
+                    gender: document.getElementById('gender').value,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('email').value,
+                    password: password,
+                    avatar: selectedAvatar
+                };
+                
+                const result = await registerUser(userData);
+                
+                if (result.success) {
+                    showMessage('registerMessage', 'تم إنشاء الحساب بنجاح!', 'success');
+                    setTimeout(() => {
+                        loadUserProfile(result.user.uid);
+                        showPage('profilePage');
+                    }, 1000);
+                } else {
+                    showMessage('registerMessage', result.error, 'error');
+                }
+            });
+        }
+
+        // عرض الرسائل
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'message ' + type;
+            element.style.display = 'block';
+            
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+
+        // تبديل الصفحات
+        function showPage(pageId) {
+            // إخفاء جميع الصفحات
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // إظهار الصفحة المطلوبة
+            document.getElementById(pageId).classList.add('active');
+            
+            // إعادة تعيين النماذج
+            if (pageId === 'registerPage') {
+                document.getElementById('registerForm').reset();
+                document.getElementById('previewImage').style.display = 'none';
+                document.getElementById('previewText').style.display = 'block';
+                selectedAvatar = '';
+                document.querySelectorAll('.avatar-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+            } else if (pageId === 'loginPage') {
+                document.getElementById('loginForm').reset();
+            }
+        }
+
+        // ================== لعبة الثعبان ==================
+        let canvas, ctx;
+        let snake, food, direction;
+        let gameInterval;
+        const gridSize = 20;
+
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // تعيين حجم اللوحة بناء على حجم الشاشة
+            const size = Math.min(600, window.innerWidth - 100);
+            canvas.width = size;
+            canvas.height = size;
+            
+            resetGame();
+            draw();
+        }
+
+        function resetGame() {
+            snake = [
+                {x: 10, y: 10}
+            ];
+            food = generateFood();
+            direction = {x: 0, y: 0};
+            score = 0;
+            document.getElementById('currentScore').textContent = score;
+            
+            if (gameInterval) {
+                clearInterval(gameInterval);
+            }
+            gameRunning = false;
+            gamePaused = false;
+            document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-play"></i> ابدأ';
+        }
+
+        function generateFood() {
+            const x = Math.floor(Math.random() * (canvas.width / gridSize));
+            const y = Math.floor(Math.random() * (canvas.height / gridSize));
+            
+            // التأكد من أن الطعام لا يظهر على الثعبان
+            for (let segment of snake) {
+                if (segment.x === x && segment.y === y) {
+                    return generateFood();
+                }
+            }
+            
+            return {x, y};
+        }
+
+        function draw() {
+            // مسح الشاشة
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // رسم الثعبان
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = index === 0 ? '#4CAF50' : '#2ecc71';
+                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+                ctx.strokeStyle = '#27ae60';
+                ctx.strokeRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+                
+                // عيون الثعبان (للرأس فقط)
+                if (index === 0) {
+                    ctx.fillStyle = 'white';
+                    
+                    // حساب اتجاه العيون
+                    let eye1X = segment.x * gridSize + 4;
+                    let eye1Y = segment.y * gridSize + 4;
+                    let eye2X = segment.x * gridSize + gridSize - 8;
+                    let eye2Y = segment.y * gridSize + 4;
+                    
+                    if (direction.x === 1) { // يمين
+                        eye1X = segment.x * gridSize + gridSize - 8;
+                        eye1Y = segment.y * gridSize + 4;
+                        eye2X = segment.x * gridSize + gridSize - 8;
+                        eye2Y = segment.y * gridSize + gridSize - 8;
+                    } else if (direction.x === -1) { // يسار
+                        eye1X = segment.x * gridSize + 4;
+                        eye1Y = segment.y * gridSize + 4;
+                        eye2X = segment.x * gridSize + 4;
+                        eye2Y = segment.y * gridSize + gridSize - 8;
+                    } else if (direction.y === -1) { // أعلى
+                        eye1X = segment.x * gridSize + 4;
+                        eye1Y = segment.y * gridSize + 4;
+                        eye2X = segment.x * gridSize + gridSize - 8;
+                        eye2Y = segment.y * gridSize + 4;
+                    } else if (direction.y === 1) { // أسفل
+                        eye1X = segment.x * gridSize + 4;
+                        eye1Y = segment.y * gridSize + gridSize - 8;
+                        eye2X = segment.x * gridSize + gridSize - 8;
+                        eye2Y = segment.y * gridSize + gridSize - 8;
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(eye1X + 2, eye1Y + 2, 2, 0, Math.PI * 2);
+                    ctx.arc(eye2X + 2, eye2Y + 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = 'black';
+                    ctx.beginPath();
+                    ctx.arc(eye1X + 2, eye1Y + 2, 1, 0, Math.PI * 2);
+                    ctx.arc(eye2X + 2, eye2Y + 2, 1, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            
+            // رسم الطعام
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2,
+                gridSize / 2 - 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+            
+            // تأثير توهج للطعام
+            ctx.strokeStyle = '#ff7979';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(
+                food.x * gridSize + gridSize / 2,
+                food.y * gridSize + gridSize / 2,
+                gridSize / 2,
+                0,
+                Math.PI * 2
+            );
+            ctx.stroke();
+            
+            // رسم الشبكة
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // إذا كانت اللعبة متوقفة، عرض رسالة
+            if (gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('اللعبة متوقفة', canvas.width / 2, canvas.height / 2 - 30);
+                ctx.font = '20px Arial';
+                ctx.fillText('اضغط على Space للاستمرار', canvas.width / 2, canvas.height / 2 + 20);
+            }
+            
+            // إذا لم تبدأ اللعبة بعد، عرض رسالة البداية
+            if (!gameRunning && !gamePaused) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('لعبة الثعبان', canvas.width / 2, canvas.height / 2 - 50);
+                ctx.font = '20px Arial';
+                ctx.fillText('اضغط على Start للبدء', canvas.width / 2, canvas.height / 2);
+                ctx.font = '16px Arial';
+                ctx.fillText('استخدم مفاتيح الأسهم للتحكم', canvas.width / 2, canvas.height / 2 + 40);
+            }
+        }
+
+        function update() {
+            if (!gameRunning || gamePaused) return;
+            
+            // حساب موضع الرأس الجديد
+            const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
+            
+            // التحقق من الاصطدام بالجدران
+            if (
+                head.x < 0 || head.x >= canvas.width / gridSize ||
+                head.y < 0 || head.y >= canvas.height / gridSize
+            ) {
+                gameOver();
+                return;
+            }
+            
+            // التحقق من الاصطدام بالنفس
+            for (let segment of snake) {
+                if (segment.x === head.x && segment.y === head.y) {
+                    gameOver();
+                    return;
+                }
+            }
+            
+            // إضافة الرأس الجديد
+            snake.unshift(head);
+            
+            // التحقق من أكل الطعام
+            if (head.x === food.x && head.y === food.y) {
+                // زيادة النتيجة
+                score += 10;
+                document.getElementById('currentScore').textContent = score;
+                
+                // تحديث أعلى نتيجة
+                if (score > highScore) {
+                    updateHighScore(score);
+                }
+                
+                // توليد طعام جديد
+                food = generateFood();
+            } else {
+                // إزالة الذيل إذا لم يؤكل الطعام
+                snake.pop();
+            }
+            
+            draw();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            
+            incrementGamesPlayed();
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('انتهت اللعبة!', canvas.width / 2, canvas.height / 2 - 50);
+            ctx.font = '24px Arial';
+            ctx.fillText(`النتيجة النهائية: ${score}`, canvas.width / 2, canvas.height / 2);
+            ctx.font = '20px Arial';
+            ctx.fillText('اضغط على R لإعادة المحاولة', canvas.width / 2, canvas.height / 2 + 50);
+        }
+
+        function startGame() {
+            if (gameRunning) return;
+            
+            resetGame();
+            gameRunning = true;
+            gamePaused = false;
+            
+            // اتجاه البداية (يمين)
+            direction = {x: 1, y: 0};
+            
+            // بدء دورة اللعبة
+            gameInterval = setInterval(update, 150);
+            document.getElementById('pauseBtn').innerHTML = '<i class="fas fa-pause"></i> إيقاف';
+            
+            draw();
+        }
+
+        function pauseGame() {
+            if (!gameRunning) {
+                startGame();
+                return;
+            }
+            
+            gamePaused = !gamePaused;
+            document.getElementById('pauseBtn').innerHTML = gamePaused ? 
+                '<i class="fas fa-play"></i> استئناف' : 
+                '<i class="fas fa-pause"></i> إيقاف';
+            
+            draw();
+        }
+
+        // التحكم بلوحة المفاتيح
+        document.addEventListener('keydown', function(e) {
+            if (!gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                    if (direction.y !== 1) {
+                        direction = {x: 0, y: -1};
+                    }
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                    if (direction.y !== -1) {
+                        direction = {x: 0, y: 1};
+                    }
+                    e.preventDefault();
+                    break;
+                case 'ArrowLeft':
+                    if (direction.x !== 1) {
+                        direction = {x: -1, y: 0};
+                    }
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                    if (direction.x !== -1) {
+                        direction = {x: 1, y: 0};
+                    }
+                    e.preventDefault();
+                    break;
+                case ' ':
+                    pauseGame();
+                    e.preventDefault();
+                    break;
+                case 'r':
+                case 'R':
+                    if (!gameRunning) {
+                        resetGame();
+                        startGame();
+                    }
+                    e.preventDefault();
+                    break;
             }
         });
+
+        // إضافة عناصر التحكم للأجهزة المحمولة
+        function createMobileControls() {
+            const controls = document.createElement('div');
+            controls.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 50%;
+                transform: translateX(50%);
+                display: grid;
+                grid-template-columns: repeat(3, 60px);
+                gap: 10px;
+                z-index: 1000;
+            `;
+            
+            const buttons = [
+                {icon: '↑', key: 'ArrowUp'},
+                {icon: '←', key: 'ArrowLeft'},
+                {icon: '↓', key: 'ArrowDown'},
+                {icon: '→', key: 'ArrowRight'},
+                {icon: '⏸', key: ' '},
+                {icon: '🔄', key: 'r'}
+            ];
+            
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.textContent = btn.icon;
+                button.style.cssText = `
+                    width: 60px;
+                    height: 60px;
+                    font-size: 24px;
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    border: 2px solid white;
+                    border-radius: 10px;
+                    cursor: pointer;
+                `;
+                button.onclick = () => simulateKeyPress(btn.key);
+                controls.appendChild(button);
+            });
+            
+            document.body.appendChild(controls);
+        }
+
+        function simulateKeyPress(key) {
+            const event = new KeyboardEvent('keydown', {key: key});
+            document.dispatchEvent(event);
+        }
+
+        // إنشاء عناصر التحكم للأجهزة المحمولة
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            setTimeout(createMobileControls, 1000);
+        }
+
+        // جعل الوظائف متاحة عالمياً
+        window.showPage = showPage;
+        window.togglePassword = togglePassword;
+        window.logout = logout;
+        window.startGame = startGame;
+        window.pauseGame = pauseGame;
+        window.resetGame = resetGame;
+
+        // تعيين نافذة اللعبة
+        window.showPage('gamePage');
     </script>
 </body>
 </html>
